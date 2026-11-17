@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Track a compounding ladder of trade targets and log wins and losses.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Climb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Compound Climb</title>
+<meta name="theme-color" content="#0A0E22">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one phone-width column floating over a deep night sky of soft glows, a dot grid and slow 3D shapes. Single dark look, by choice. */
+:root {
+  --bg: #0A0E22;
+  --bg-2: #121838;
+  --surface: rgba(255,255,255,0.055);
+  --surface-2: rgba(255,255,255,0.09);
+  --line: rgba(200,210,255,0.13);
+  --fg: #EEF0FF;
+  --muted: #98A0C8;
+  --faint: #626A94;
+  --gold: #9BE7FF;
+  --gold-deep: #4AA8FF;
+  --mint: #3EE0A1;
+  --coral: #FF6F7D;
+  --violet: #7D6BFF;
+  --teal: #25D0C6;
+  --font-display: "Unbounded", "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Manrope", "Inter", system-ui, -apple-system, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r-lg: 22px;
+  --r-md: 14px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 8px; }
+
+/* ---------- Backdrop ---------- */
+.sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.sky::before {
+  content: ""; position: absolute; inset: -20%;
+  background:
+    radial-gradient(40% 35% at 15% 10%, rgba(125,107,255,0.35), transparent 70%),
+    radial-gradient(35% 30% at 90% 30%, rgba(37,208,198,0.22), transparent 70%),
+    radial-gradient(45% 35% at 60% 100%, rgba(74,168,255,0.16), transparent 70%);
+  filter: blur(10px);
+}
+.sky::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(200,210,255,0.16) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 75%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 75%);
+}
+.shape { position: absolute; transform-style: preserve-3d; perspective: 600px; }
+.cube { width: 70px; height: 70px; top: 9%; right: 6%; animation: spin 26s linear infinite; transform-style: preserve-3d; }
+.cube span {
+  position: absolute; inset: 0; border: 1px solid rgba(155,231,255,0.45);
+  background: linear-gradient(135deg, rgba(155,231,255,0.10), rgba(125,107,255,0.06));
+}
+.cube span:nth-child(1) { transform: translateZ(35px); }
+.cube span:nth-child(2) { transform: rotateY(180deg) translateZ(35px); }
+.cube span:nth-child(3) { transform: rotateY(90deg) translateZ(35px); }
+.cube span:nth-child(4) { transform: rotateY(-90deg) translateZ(35px); }
+.cube span:nth-child(5) { transform: rotateX(90deg) translateZ(35px); }
+.cube span:nth-child(6) { transform: rotateX(-90deg) translateZ(35px); }
+.ring {
+  width: 160px; height: 160px; left: -50px; top: 48%;
+  border-radius: 50%; border: 10px solid rgba(37,208,198,0.16);
+  box-shadow: inset 0 0 30px rgba(37,208,198,0.15);
+  animation: tilt 18s ease-in-out infinite;
+}
+.prism {
+  width: 0; height: 0; right: 10%; bottom: 8%;
+  border-left: 34px solid transparent; border-right: 34px solid transparent;
+  border-bottom: 58px solid rgba(125,107,255,0.22);
+  filter: drop-shadow(0 0 18px rgba(125,107,255,0.4));
+  animation: float 9s ease-in-out infinite;
+}
+@keyframes spin { from { transform: rotateX(-24deg) rotateY(0); } to { transform: rotateX(-24deg) rotateY(360deg); } }
+@keyframes tilt { 0%,100% { transform: rotateX(68deg) rotateZ(0); } 50% { transform: rotateX(58deg) rotateZ(180deg); } }
+@keyframes float { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-18px) rotate(12deg); } }
+
+/* ---------- App column ---------- */
+.app {
+  position: relative; z-index: 1;
+  max-width: 480px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 48px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(145deg, var(--gold), var(--gold-deep));
+  display: grid; place-items: center;
+  box-shadow: 0 6px 18px rgba(74,168,255,0.35), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.brand-mark svg { width: 20px; height: 20px; }
+.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: 0.01em; }
+.icon-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: 7px 14px; font-size: 13px; font-weight: 600; color: var(--fg);
+}
+.icon-btn:hover { background: var(--surface-2); }
+
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  font-size: 13px; color: var(--muted);
+  background: rgba(125,107,255,0.12); border: 1px dashed rgba(125,107,255,0.45);
+  border-radius: var(--r-md); padding: 10px 14px;
+}
+.banner button { background: none; border: 0; color: var(--gold); font-weight: 700; padding: 0; }
+
+/* ---------- Hero card ---------- */
+.hero-wrap { perspective: 900px; }
+.hero {
+  position: relative; border-radius: var(--r-lg); padding: 22px 20px 20px;
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 60%),
+    var(--bg-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  transform-style: preserve-3d; transition: transform 0.25s ease-out;
+  overflow: hidden;
+}
+.hero::before {
+  content: ""; position: absolute; width: 220px; height: 220px; right: -70px; top: -90px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(155,231,255,0.32), transparent 65%);
+}
+.hero-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; position: relative; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 600; }
+.amount { font-family: var(--font-display); font-weight: 700; font-size: clamp(32px, 9vw, 42px); line-height: 1.1; margin-top: 6px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.amount small { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.pill {
+  flex: none; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+  background: rgba(62,224,161,0.14); color: var(--mint); border: 1px solid rgba(62,224,161,0.3);
+  font-family: var(--font-num);
+}
+.next {
+  position: relative; margin-top: 18px; padding: 14px 16px; border-radius: var(--r-md);
+  background: linear-gradient(120deg, rgba(155,231,255,0.16), rgba(74,168,255,0.06));
+  border: 1px solid rgba(155,231,255,0.35);
+}
+.next-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.next-val { font-family: var(--font-num); font-weight: 600; font-size: 22px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.big-target { position: relative; margin-top: 10px; font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 12.5vw, 58px); line-height: 1.02; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+  background: linear-gradient(180deg, #FFFFFF 10%, var(--gold) 95%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 24px rgba(74,168,255,0.35)); }
+.big-target small { font-family: var(--font-body); font-size: 16px; font-weight: 600; letter-spacing: 0; -webkit-text-fill-color: var(--muted); margin-left: 6px; }
+.need { position: relative; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-radius: var(--r-md); background: linear-gradient(120deg, rgba(155,231,255,0.16), rgba(74,168,255,0.05)); border: 1px solid rgba(155,231,255,0.35); }
+.need-val { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 8vw, 34px); color: var(--gold); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.need-val small { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.need-pct { font-family: var(--font-num); font-size: 13px; color: var(--muted); text-align: right; }
+.current { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.current-val { font-family: var(--font-num); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+.current-val small { font-size: 12px; color: var(--muted); margin-left: 4px; font-family: var(--font-body); }
+.togo { font-size: 13px; color: var(--muted); }
+.togo b { color: var(--fg); font-family: var(--font-num); font-weight: 600; }
+.bar { margin-top: 12px; height: 8px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); box-shadow: 0 0 12px rgba(155,231,255,0.6); transition: width 0.6s cubic-bezier(.2,.8,.2,1); }
+.bar-legend { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--faint); font-family: var(--font-num); }
+
+/* ---------- Record ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.section-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.section-h h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 14px; letter-spacing: 0.02em; }
+.section-h span { font-size: 12px; color: var(--muted); }
+.record-row { display: flex; gap: 8px; }
+.field {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 12px; padding: 0 12px;
+}
+.field:focus-within { border-color: rgba(155,231,255,0.6); }
+.field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; padding: 12px 0; font-family: var(--font-num); font-size: 17px; }
+.field em { font-style: normal; font-size: 13px; color: var(--muted); }
+.btn {
+  border: 0; border-radius: 12px; padding: 0 18px; font-weight: 700; font-size: 15px;
+  background: linear-gradient(145deg, var(--gold), var(--gold-deep)); color: #03182B;
+  box-shadow: 0 8px 20px -6px rgba(74,168,255,0.6), inset 0 1px 0 rgba(255,255,255,0.45);
+  transition: transform 0.15s;
+}
+.btn:active { transform: translateY(1px) scale(0.98); }
+.chips { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.chip:hover { color: var(--fg); background: var(--surface-2); }
+.chip.win { color: var(--mint); }
+.err { color: var(--coral); font-size: 13px; margin-top: 8px; }
+
+/* ---------- Stats ---------- */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; min-width: 0; }
+.stat b { display: block; font-family: var(--font-num); font-size: 18px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.stat .label { font-size: 10px; }
+.stat.w b { color: var(--mint); }
+.stat.l b { color: var(--coral); }
+.journey { margin-top: 12px; }
+.journey .bar { height: 6px; }
+.journey .bar i { background: linear-gradient(90deg, var(--violet), var(--teal)); box-shadow: 0 0 10px rgba(37,208,198,0.5); }
+
+/* ---------- Ladder ---------- */
+.ladder { max-height: 420px; overflow-y: auto; margin: 0 -6px; padding: 2px 6px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.rung {
+  display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px; font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+}
+.rung { position: relative; grid-template-columns: 14px 64px 1fr auto !important; }
+.rung::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 0; width: 2px; background: var(--line); }
+.rung:first-child::before { top: 50%; }
+.rung:last-child::before { bottom: 50%; }
+.rung.done::before { background: linear-gradient(180deg, var(--gold-deep), var(--gold)); opacity: 0.55; }
+.node { position: relative; z-index: 1; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--faint); background: var(--bg-2); justify-self: center; }
+.rung.done .node { border: 0; width: 12px; height: 12px; background: var(--gold); box-shadow: 0 0 0 3px rgba(155,231,255,0.15), 0 0 10px rgba(155,231,255,0.6); }
+.rung.is-next .node { width: 12px; height: 12px; border-color: var(--gold); background: var(--bg); animation: pulse 2s ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(155,231,255,0.6); } 100% { box-shadow: 0 0 0 10px rgba(155,231,255,0); } }
+.when { display: block; font-family: var(--font-body); font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 1px; letter-spacing: 0.01em; }
+.rung.is-next .when { color: var(--gold); opacity: 0.8; }
+.dur { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--gold); background: rgba(155,231,255,0.10); border: 1px solid rgba(155,231,255,0.22); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.dur svg { width: 11px; height: 11px; flex: none; }
+.dur.same { color: var(--muted); background: transparent; border-color: var(--line); }
+.rung .n { font-size: 12px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.rung .v { font-family: var(--font-num); font-weight: 500; font-size: 15px; }
+.rung .x { font-family: var(--font-num); font-size: 12px; color: var(--faint); text-align: right; }
+.rung.done .v { color: var(--muted); }
+.rung.done .n { color: var(--faint); }
+.tick { width: 16px; height: 16px; border-radius: 50%; background: rgba(62,224,161,0.18); color: var(--mint); display: inline-grid; place-items: center; font-size: 10px; }
+.rung.is-next {
+  background: linear-gradient(110deg, rgba(155,231,255,0.22), rgba(74,168,255,0.08));
+  border-color: rgba(155,231,255,0.55);
+  box-shadow: 0 10px 26px -12px rgba(74,168,255,0.7);
+  transform: translateZ(0) scale(1.015);
+}
+.rung.is-next .n { color: var(--gold); }
+.rung.is-next .v { color: var(--gold); font-weight: 600; font-size: 16px; }
+.rung.is-next .x { color: var(--gold); }
+.tag { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; background: var(--gold); color: #03182B; }
+.mile { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; border: 1px solid rgba(125,107,255,0.6); color: #B9AFFF; margin-left: 6px; font-family: var(--font-num); }
+
+/* ---------- History ---------- */
+.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hist li { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 12px; background: rgba(0,0,0,0.18); }
+.dot { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.dot.win { background: rgba(62,224,161,0.16); color: var(--mint); }
+.dot.loss { background: rgba(255,111,125,0.16); color: var(--coral); }
+.dot.flat { background: var(--surface-2); color: var(--muted); }
+.hist .main { min-width: 0; font-size: 13px; }
+.hist .main b { font-family: var(--font-num); font-weight: 600; }
+.hist .main div { color: var(--faint); font-size: 11px; }
+.hist .d { font-family: var(--font-num); font-size: 13px; font-weight: 600; }
+.hist .d.win { color: var(--mint); } .hist .d.loss { color: var(--coral); }
+.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 14px 0; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.link-btn:hover { color: var(--fg); }
+
+/* ---------- Setup sheet ---------- */
+.sheet-back { position: fixed; inset: 0; z-index: 20; background: rgba(5,7,20,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  width: 100%; max-width: 480px; max-height: 92%; overflow-y: auto;
+  background: var(--bg-2); border: 1px solid var(--line); border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  padding: 22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  animation: rise 0.28s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes rise { from { transform: translateY(40px); opacity: 0.4; } }
+.sheet h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+.sheet p.sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.f label { display: block; font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.f input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font-family: var(--font-num); font-size: 16px; outline: none; }
+.f input:focus { border-color: rgba(155,231,255,0.6); }
+.preview { margin-top: 16px; padding: 14px; border-radius: var(--r-md); background: rgba(125,107,255,0.1); border: 1px solid rgba(125,107,255,0.3); font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.preview b { color: var(--fg); font-family: var(--font-num); font-weight: 600; }
+.sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+.sheet-actions .btn { flex: 1; padding: 13px; }
+.ghost { flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 18px; font-weight: 600; }
+.warn { margin-top: 12px; font-size: 12px; color: var(--coral); }
+
+/* ---------- Toast + confetti ---------- */
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+.toast {
+  position: fixed; left: 50%; top: calc(18px + env(safe-area-inset-top, 0px)); z-index: 31;
+  transform: translateX(-50%); max-width: calc(100% - 32px);
+  background: linear-gradient(145deg, var(--gold), var(--gold-deep)); color: #03182B;
+  font-weight: 800; padding: 10px 18px; border-radius: 999px; font-size: 14px;
+  box-shadow: 0 14px 30px -8px rgba(74,168,255,0.7);
+  animation: pop 0.4s cubic-bezier(.2,1.4,.4,1);
+}
+.toast.loss { background: var(--bg-2); color: var(--fg); border: 1px solid var(--line); box-shadow: none; }
+@keyframes pop { from { transform: translate(-50%, -12px) scale(0.9); opacity: 0; } }
+
+@media (max-width: 380px) {
+  .rung { grid-template-columns: 14px 58px 1fr auto !important; gap: 8px; }
+  .stats { gap: 6px; }
+  .stat { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rung.is-next .node { animation: none; }
+  .cube, .ring, .prism { animation: none; }
+  .hero { transition: none; }
+  .bar i { transition: none; }
+}
+
+/* ---------- Phone tuning ---------- */
+html { -webkit-text-size-adjust: 100%; }
+body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+button, input, label { touch-action: manipulation; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.app { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+  background: linear-gradient(180deg, rgba(10,14,34,0) 0, rgba(10,14,34,0.92) 18px);
+  padding-top: 18px;
+}
+.dock-in {
+  max-width: 480px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.dock .record-row { background: rgba(18,24,56,0.92); border: 1px solid var(--line); border-radius: 18px; padding: 6px; box-shadow: 0 -10px 30px -12px rgba(0,0,0,0.7); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.dock .field { border: 0; background: transparent; }
+.dock .field input { font-size: 18px; padding: 14px 0; }
+.dock .btn { min-height: 52px; padding: 0 22px; font-size: 16px; }
+.dock-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; min-height: 40px; }
+.dock-row .chip { min-height: 40px; padding: 8px 16px; background: rgba(18,24,56,0.92); }
+.dock-row .err { margin: 0; font-size: 12px; }
+.icon-btn { min-height: 40px; }
+.link-btn { min-height: 36px; }
+.count { font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 600; margin-left: 6px; }
+.ladder { max-height: min(56vh, 460px); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.rung { min-height: 44px; }
+.hist li { min-height: 52px; }
+.f input { font-size: 16px; min-height: 46px; }
+.sheet-back { z-index: 40; }
+.toast { z-index: 41; }
+#confetti { z-index: 39; }
+@media (max-width: 480px) {
+  .app { gap: 14px; padding-block-start: 12px; }
+  .card, .stat, .sheet .record-row { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .card { background: rgba(20,26,58,0.72); }
+  .hero { padding: 18px 16px 16px; }
+  .cube { width: 54px; height: 54px; top: 6%; right: 4%; opacity: 0.7; }
+  .ring { opacity: 0.7; }
+  .section-h h2 { font-size: 13px; }
+  .banner { padding: 8px 12px; font-size: 12px; }
+}
+@media (max-width: 360px) {
+  .big-target { font-size: 36px; }
+  .need-val { font-size: 24px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats .stat:last-child { grid-column: span 2; }
+  .brand-name { font-size: 15px; }
+}
+@media (min-width: 700px) {
+  .app { padding-block-start: 32px; }
+}
+
+/* ---------- Living details (all subtle; off for reduced motion) ---------- */
+@property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@media (prefers-reduced-motion: no-preference) {
+  .sky::before { animation: drift 28s ease-in-out infinite alternate; }
+  .sky::after { animation: twinkle 7s ease-in-out infinite; }
+  .app > *, .dock { animation: rise-in 0.7s cubic-bezier(.2,.8,.2,1) both; }
+  .app > *:nth-child(2) { animation-delay: 0.05s; }
+  .app > *:nth-child(3) { animation-delay: 0.1s; }
+  .app > *:nth-child(4) { animation-delay: 0.18s; }
+  .app > *:nth-child(5) { animation-delay: 0.26s; }
+  .app > *:nth-child(6) { animation-delay: 0.34s; }
+  .dock { animation-delay: 0.3s; }
+
+  .hero::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: conic-gradient(from var(--ang), transparent 0 62%, rgba(155,231,255,0.75) 76%, rgba(125,107,255,0.5) 84%, transparent 94%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    animation: orbit 9s linear infinite;
+  }
+  .big-target {
+    background: linear-gradient(110deg, var(--gold) 0%, #FFFFFF 38%, #E6FAFF 46%, var(--gold) 62%, var(--gold) 100%);
+    background-size: 280% 100%; -webkit-background-clip: text; background-clip: text;
+    animation: text-sheen 6s ease-in-out infinite;
+  }
+  .need { animation: breathe 4.5s ease-in-out infinite; }
+  .bar i { position: relative; overflow: hidden; }
+  .bar i::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+    transform: translateX(-100%); animation: sweep 2.8s ease-in-out infinite;
+  }
+  .journey .bar i::after { animation-duration: 3.6s; animation-delay: 0.8s; }
+  .btn { position: relative; overflow: hidden; }
+  .btn::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: 0;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent);
+    transform: translateX(-150%) skewX(-18deg); animation: btn-sheen 4.5s ease-in-out infinite 1.2s;
+  }
+  .chip, .icon-btn, .btn, .link-btn { transition: transform 0.15s, background-color 0.2s, color 0.2s, box-shadow 0.2s; }
+  .chip:active, .icon-btn:active { transform: scale(0.95); }
+  .rung.done::before { background: linear-gradient(180deg, var(--gold-deep), var(--gold), var(--gold-deep)); background-size: 100% 300%; animation: flow 3s linear infinite; }
+  .rung.is-next { overflow: hidden; }
+  .rung.is-next::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    background: linear-gradient(100deg, transparent 30%, rgba(155,231,255,0.18) 50%, transparent 70%);
+    background-size: 250% 100%; animation: text-sheen 3.5s ease-in-out infinite;
+  }
+  .pill { animation: breathe-pill 3.5s ease-in-out infinite; }
+  .brand-mark svg path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw 1.2s 0.2s cubic-bezier(.6,0,.2,1) forwards; }
+  .bump { animation: bump 0.5s cubic-bezier(.2,1.6,.4,1); display: inline-block; }
+  .hist li { animation: rise-in 0.45s cubic-bezier(.2,.8,.2,1) both; }
+  .hist li:first-child { animation: slide-in 0.5s cubic-bezier(.2,.8,.2,1) both; }
+  .field:focus-within { box-shadow: 0 0 0 4px rgba(155,231,255,0.12); transition: box-shadow 0.25s; }
+}
+@keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(4%, -3%) scale(1.08) rotate(4deg); } }
+@keyframes twinkle { 0%,100% { opacity: 0.75; } 50% { opacity: 1; } }
+@keyframes rise-in { from { transform: translateY(14px); opacity: 0.15; } }
+@keyframes slide-in { from { transform: translateX(-12px); opacity: 0.2; } }
+@keyframes orbit { to { --ang: 360deg; } }
+@keyframes text-sheen { 0% { background-position: 100% 0; } 55%,100% { background-position: 0% 0; } }
+@keyframes breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(155,231,255,0); } 50% { box-shadow: 0 0 24px -4px rgba(155,231,255,0.35); } }
+@keyframes breathe-pill { 0%,100% { box-shadow: 0 0 0 0 rgba(62,224,161,0); } 50% { box-shadow: 0 0 14px 0 rgba(62,224,161,0.3); } }
+@keyframes sweep { 0% { transform: translateX(-100%); } 60%,100% { transform: translateX(100%); } }
+@keyframes btn-sheen { 0% { transform: translateX(-150%) skewX(-18deg); } 35%,100% { transform: translateX(350%) skewX(-18deg); } }
+@keyframes flow { from { background-position: 0 0; } to { background-position: 0 -300%; } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.h-actions { display: flex; gap: 14px; }
+body { padding-top: env(safe-area-inset-top, 0px); }
+</style>
+
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <div class="shape cube"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="shape ring"></div>
+  <div class="shape prism"></div>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<main class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 19h4v-4h4v-4h4V7h4V4" stroke="#03182B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="brand-name">Compound Climb</span>
+    </div>
+    <button class="icon-btn" id="openSetup" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.2" stroke="currentColor" stroke-width="2"/></svg>
+      Setup
+    </button>
+  </header>
+
+  <div class="banner" id="sampleBanner" hidden>
+    <span>You're looking at sample trades.</span>
+    <button type="button" id="startOwn">Start my own climb</button>
+  </div>
+
+  <section class="hero-wrap" aria-label="Current position">
+    <div class="hero" id="hero">
+      <div class="hero-row">
+        <div class="label" id="nextLabel">Next target</div>
+        <span class="pill" id="levelPill">Step 0</span>
+      </div>
+      <div class="big-target" id="nextVal">0</div>
+      <div class="need">
+        <div>
+          <div class="label" id="needLabel">Still needed</div>
+          <div class="need-val" id="togo">0</div>
+        </div>
+        <div class="need-pct" id="needPct"></div>
+      </div>
+      <div class="bar"><i id="stepBar"></i></div>
+      <div class="bar-legend"><span id="fromLbl"></span><span id="toLbl"></span></div>
+      <div class="current">
+        <span class="label">Trade amount now</span>
+        <span class="current-val" id="amount">0</span>
+      </div>
+    </div>
+  </section>
+
+
+  <section aria-label="Stats">
+    <div class="stats">
+      <div class="stat w"><div class="label">Wins</div><b id="wins">0</b></div>
+      <div class="stat l"><div class="label">Losses</div><b id="losses">0</b></div>
+      <div class="stat"><div class="label">Growth</div><b id="growth">1.00X</b></div>
+    </div>
+    <div class="journey card" style="margin-top:8px">
+      <div class="section-h" style="margin-bottom:0"><h2>Journey to the goal</h2><span id="journeyTxt"></span></div>
+      <div class="bar"><i id="journeyBar"></i></div>
+      <div class="bar-legend"><span id="jFrom"></span><span id="jTo"></span></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="ladH">
+    <div class="section-h"><h2 id="ladH">Target ladder</h2><span id="ladSub"></span></div>
+    <div class="ladder" id="ladder" role="list"></div>
+  </section>
+
+  <section class="card" aria-labelledby="histH">
+    <div class="section-h"><h2 id="histH">History <span id="histSub" class="count"></span></h2><span class="h-actions"><button class="link-btn" type="button" id="csvBtn">Export CSV</button><button class="link-btn" type="button" id="undoBtn">Undo last</button></span></div>
+    <ul class="hist" id="hist"></ul>
+  </section>
+</main>
+
+<section class="dock" aria-labelledby="recH">
+  <div class="dock-in">
+    <h2 id="recH" class="sr">Record a trade</h2>
+    <form id="recForm" class="record-row" novalidate>
+      <label class="field" for="newAmt">
+        <input id="newAmt" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="New amount" aria-label="Trade amount after this trade">
+        <em id="unitEm">USDT</em>
+      </label>
+      <button class="btn" type="submit">Save</button>
+    </form>
+    <div class="dock-row">
+      <button class="chip win" type="button" id="hitBtn">Hit next target</button>
+      <div class="err" id="recErr" hidden></div>
+    </div>
+  </div>
+</section>
+
+<div class="sheet-back" id="sheetBack" hidden>
+  <form class="sheet" id="setupForm" role="dialog" aria-modal="true" aria-labelledby="setupH" novalidate>
+    <h2 id="setupH">Set up your climb</h2>
+    <p class="sub">Each target is the previous one plus your step gain.</p>
+    <div class="grid2">
+      <div class="f"><label for="sStart">Starting amount</label><input id="sStart" inputmode="decimal"></div>
+      <div class="f"><label for="sUnit">Currency</label><input id="sUnit" maxlength="8"></div>
+      <div class="f"><label for="sPct">Gain per step (%)</label><input id="sPct" inputmode="decimal"></div>
+      <div class="f"><label for="sSteps">Number of steps</label><input id="sSteps" inputmode="numeric"></div>
+    </div>
+    <div class="preview" id="sPreview"></div>
+    <div class="warn" id="sWarn" hidden></div>
+    <div class="sheet-actions">
+      <button class="ghost" type="button" id="cancelSetup">Cancel</button>
+      <button class="btn" type="submit" id="saveSetup">Start climb</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const KEY = 'compound-climb-v1';
+  const MILESTONES = [10, 100, 1000, 10000, 100000];
+  const $ = (id) => document.getElementById(id);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const sample = () => {
+    const t0 = Date.now();
+    const h = 36e5;
+    return {
+      sample: true, start: 10, pct: 10, steps: 100, unit: 'USDT', amount: 13.6, startedAt: t0 - 101 * h,
+      history: [
+        { at: t0 - 94 * h, from: 10, to: 11.05 },
+        { at: t0 - 63 * h, from: 11.05, to: 12.2 },
+        { at: t0 - 40 * h, from: 12.2, to: 11.6 },
+        { at: t0 - 21 * h, from: 11.6, to: 12.3 },
+        { at: t0 - 5.5 * h, from: 12.3, to: 13.6 }
+      ]
+    };
+  };
+
+  let state = load() || sample();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (s.sample || typeof s.start !== 'number' || typeof s.amount !== 'number') return null;
+      s.history = Array.isArray(s.history) ? s.history : [];
+      return s;
+    } catch (e) { return null; }
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  const r2 = (n) => Math.round(n * 100) / 100;
+  const fmt = (n) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  const fmtX = (n) => (n >= 100 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n) : n.toFixed(2)) + 'X';
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const parseNum = (v) => { const n = parseFloat(String(v).replace(/,/g, '').trim()); return isFinite(n) ? n : NaN; };
+
+  function targets(s) {
+    const out = [r2(s.start)];
+    const g = 1 + s.pct / 100;
+    for (let i = 1; i <= s.steps; i++) out.push(r2(s.start * Math.pow(g, i)));
+    return out;
+  }
+  // Highest step whose target is at or below the amount (0 = below Trade 1).
+  function levelOf(amount, t) {
+    let n = 0;
+    for (let i = 1; i < t.length; i++) { if (amount + 1e-9 >= t[i]) n = i; else break; }
+    return n;
+  }
+  function milestoneAt(t, start) {
+    const map = {};
+    let m = 0;
+    for (let i = 1; i < t.length && m < MILESTONES.length; i++) {
+      while (m < MILESTONES.length && t[i] / start >= MILESTONES[m]) { if (!(i in map)) map[i] = MILESTONES[m]; m++; }
+    }
+    return map;
+  }
+
+  function fmtDur(ms) {
+    const m = Math.round(ms / 6e4);
+    if (m < 1) return '<1m';
+    if (m < 60) return m + 'm';
+    const hrs = Math.floor(m / 60);
+    if (hrs < 24) return hrs + 'h' + (hrs < 10 && m % 60 ? ' ' + (m % 60) + 'm' : '');
+    const d = Math.floor(hrs / 24);
+    return d + 'd' + (hrs % 24 ? ' ' + (hrs % 24) + 'h' : '');
+  }
+  const fmtWhen = (ms) => { const d = new Date(ms); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); };
+  const CLOCK = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  // When each target was (most recently) reached; a drop below a target clears it until it is hit again.
+  function hitTimes(t) {
+    const hit = {};
+    state.history.forEach((h) => {
+      const a = levelOf(h.from, t), b = levelOf(h.to, t);
+      if (b > a) for (let i = a + 1; i <= b; i++) hit[i] = h.at;
+      else if (b < a) for (let i = b + 1; i <= a; i++) delete hit[i];
+    });
+    return hit;
+  }
+
+  // ---------- Motion helpers ----------
+  function tween(el, to, html) {
+    const from = typeof el._v === 'number' ? el._v : 0;
+    el._v = to;
+    cancelAnimationFrame(el._raf);
+    if (reduceMotion || from === to) { el.innerHTML = html(to); return; }
+    const t0 = performance.now(), dur = from === 0 ? 1100 : 700;
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.innerHTML = html(from + (to - from) * e);
+      if (k < 1) el._raf = requestAnimationFrame(step);
+    };
+    el._raf = requestAnimationFrame(step);
+  }
+  function setBar(el, pct) {
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = pct.toFixed(1) + '%'; }));
+  }
+  function setText(el, txt) {
+    txt = String(txt);
+    if (el.textContent === txt) return;
+    const first = el._seen === undefined;
+    el._seen = true;
+    el.textContent = txt;
+    if (first || reduceMotion) return;
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  }
+
+  function render(scrollLadder) {
+    const t = targets(state);
+    const lvl = levelOf(state.amount, t);
+    const done = lvl >= state.steps;
+    const nextIdx = done ? state.steps : lvl + 1;
+    const unit = esc(state.unit || '');
+
+    $('sampleBanner').hidden = !state.sample;
+    tween($('amount'), state.amount, (v) => fmt(v) + '<small>' + unit + '</small>');
+    $('levelPill').textContent = done ? 'Summit!' : 'Step ' + lvl + ' / ' + state.steps;
+    $('unitEm').textContent = state.unit || '';
+
+    const floor = lvl === 0 ? Math.min(state.start, state.amount) : t[lvl];
+    const target = t[nextIdx];
+    $('nextLabel').textContent = done ? 'Final target reached' : 'Next target · Trade ' + nextIdx;
+    tween($('nextVal'), target, (v) => fmt(v) + '<small>' + unit + '</small>');
+    const gap = Math.max(0, target - state.amount);
+    $('needLabel').textContent = done ? 'Climb complete' : 'Still needed';
+    if (done) { $('togo')._v = undefined; $('togo').innerHTML = 'All ' + state.steps + ' hit'; }
+    else tween($('togo'), gap, (v) => '+' + fmt(v) + '<small>' + unit + '</small>');
+    $('needPct').innerHTML = done ? '' : '+' + ((gap / state.amount) * 100).toFixed(1) + '%<br>gain needed';
+    const pct = done ? 100 : Math.max(0, Math.min(100, ((state.amount - floor) / (target - floor || 1)) * 100));
+    setBar($('stepBar'), pct);
+    $('fromLbl').textContent = lvl === 0 ? 'Start ' + fmt(floor) : 'Trade ' + lvl + ' · ' + fmt(floor);
+    $('toLbl').textContent = done ? '' : fmt(target);
+
+    let wins = 0, losses = 0;
+    state.history.forEach((h) => { if (h.to > h.from) wins++; else if (h.to < h.from) losses++; });
+    setText($('wins'), wins);
+    setText($('losses'), losses);
+    setText($('growth'), fmtX(state.amount / state.start));
+
+    const finalX = t[t.length - 1] / state.start;
+    const jp = state.amount <= state.start ? 0 : Math.min(100, (Math.log(state.amount / state.start) / Math.log(finalX)) * 100);
+    setBar($('journeyBar'), jp);
+    $('journeyTxt').textContent = lvl + ' of ' + state.steps + ' steps';
+    $('jFrom').textContent = fmt(state.start);
+    $('jTo').textContent = fmt(t[t.length - 1]) + ' (' + fmtX(finalX) + ')';
+
+    $('ladSub').textContent = state.pct + '% per step · time between hits';
+    const miles = milestoneAt(t, state.start);
+    const hit = hitTimes(t);
+    const began = state.startedAt || (state.history[0] && state.history[0].at) || null;
+    let html = '';
+    for (let i = 1; i < t.length; i++) {
+      const isDone = i <= lvl;
+      const isNext = i === nextIdx && !done;
+      const cls = 'rung' + (isDone ? ' done' : '') + (isNext ? ' is-next' : '');
+      const mile = miles[i] ? '<span class="mile">' + fmtX(miles[i]) + '</span>' : '';
+      const prevAt = i === 1 ? began : hit[i - 1];
+      let when = '', x;
+      if (isDone && hit[i]) {
+        when = '<span class="when">' + esc(fmtWhen(hit[i])) + '</span>';
+        if (prevAt != null && hit[i] - prevAt < 6e4) x = '<span class="dur same" title="Reached in the same trade as the one before">same trade</span>';
+        else if (prevAt != null) x = '<span class="dur" title="Time since the previous target">' + CLOCK + fmtDur(hit[i] - prevAt) + '</span>';
+        else x = fmtX(t[i] / state.start);
+      } else if (isNext) {
+        if (prevAt != null) when = '<span class="when">climbing for ' + fmtDur(Date.now() - prevAt) + '</span>';
+        x = '<span class="tag">Next</span>';
+      } else {
+        x = fmtX(t[i] / state.start);
+      }
+      html += '<div class="' + cls + '" role="listitem"' + (isNext ? ' id="nextRung"' : '') + '>' +
+        '<span class="node" aria-hidden="true"></span>' +
+        '<span class="n">Trade ' + i + '</span>' +
+        '<span class="v">' + fmt(t[i]) + mile + when + '</span>' +
+        '<span class="x">' + x + '</span></div>';
+    }
+    $('ladder').innerHTML = html;
+    if (scrollLadder) {
+      const lad = $('ladder'), nr = $('nextRung');
+      if (nr) lad.scrollTop = Math.max(0, nr.offsetTop - lad.offsetTop - 110);
+      else lad.scrollTop = lad.scrollHeight;
+    }
+
+    $('histSub').textContent = state.history.length ? '· ' + state.history.length : '';
+    if (!state.history.length) {
+      $('hist').innerHTML = '<li class="empty" style="display:block;background:none">No trades yet. Save your amount after each trade.</li>';
+    } else {
+      $('hist').innerHTML = state.history.slice().reverse().slice(0, 30).map((h) => {
+        const d = h.to - h.from;
+        const k = d > 0 ? 'win' : d < 0 ? 'loss' : 'flat';
+        const sym = d > 0 ? '▲' : d < 0 ? '▼' : '•';
+        const when = new Date(h.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const pctCh = h.from ? (d / h.from) * 100 : 0;
+        return '<li><span class="dot ' + k + '">' + sym + '</span>' +
+          '<div class="main"><b>' + fmt(h.from) + ' → ' + fmt(h.to) + '</b><div>' + esc(when) + '</div></div>' +
+          '<span class="d ' + k + '">' + (d > 0 ? '+' : '') + pctCh.toFixed(1) + '%</span></li>';
+      }).join('');
+    }
+    $('undoBtn').disabled = !state.history.length;
+    $('undoBtn').style.opacity = state.history.length ? 1 : 0.4;
+  }
+
+  function record(newAmt) {
+    const t = targets(state);
+    const before = levelOf(state.amount, t);
+    const after = levelOf(newAmt, t);
+    state.history.push({ at: Date.now(), from: state.amount, to: newAmt });
+    state.amount = newAmt;
+    save();
+    render(true);
+    if (after > before) {
+      const miles = milestoneAt(t, state.start);
+      let crossed = null;
+      for (let i = before + 1; i <= after; i++) if (miles[i]) crossed = miles[i];
+      if (after >= state.steps) { toast('Summit reached! All ' + state.steps + ' targets hit'); confetti(3); }
+      else if (crossed) { toast(fmtX(crossed) + ' milestone! Trade ' + after + ' reached'); confetti(2); }
+      else { toast(after - before > 1 ? 'Trades ' + (before + 1) + '–' + after + ' reached!' : 'Trade ' + after + ' reached!'); confetti(1); }
+    } else if (after < before) {
+      toast('Back to step ' + after + '. Next target: ' + fmt(t[after + 1]), true);
+    }
+  }
+
+  $('recForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = parseNum($('newAmt').value);
+    const err = $('recErr');
+    if (!(v > 0)) { err.textContent = 'Enter an amount above 0, for example 12.50.'; err.hidden = false; return; }
+    err.hidden = true;
+    $('newAmt').value = '';
+    $('newAmt').blur();
+    record(r2(v));
+  });
+  $('hitBtn').addEventListener('click', () => {
+    const t = targets(state);
+    const lvl = levelOf(state.amount, t);
+    if (lvl >= state.steps) return;
+    record(t[lvl + 1]);
+  });
+  $('undoBtn').addEventListener('click', () => {
+    const h = state.history.pop();
+    if (!h) return;
+    state.amount = h.from;
+    save();
+    render(true);
+    toast('Last trade removed', true);
+  });
+
+  // ---------- CSV export ----------
+  $('csvBtn').addEventListener('click', async () => {
+    if (!state.history.length) { toast('No trades to export yet', true); return; }
+    const t = targets(state);
+    const q = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+    const rows = [['date', 'time', 'amount_before', 'amount_after', 'change', 'change_pct', 'result', 'step_after', 'next_target', 'currency']];
+    state.history.forEach((h) => {
+      const d = new Date(h.at), ch = h.to - h.from, lv = levelOf(h.to, t);
+      const pad = (n) => String(n).padStart(2, '0');
+      rows.push([
+        d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()),
+        pad(d.getHours()) + ':' + pad(d.getMinutes()),
+        h.from.toFixed(2), h.to.toFixed(2), ch.toFixed(2),
+        (h.from ? (ch / h.from) * 100 : 0).toFixed(2),
+        ch > 0 ? 'win' : ch < 0 ? 'loss' : 'even', lv,
+        lv < state.steps ? t[lv + 1].toFixed(2) : '', state.unit
+      ]);
+    });
+    const csv = rows.map((r) => r.map(q).join(',')).join('\r\n');
+    const name = 'compound-climb-' + new Date().toISOString().slice(0, 10) + '.csv';
+    const file = new File([csv], name, { type: 'text/csv' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('Exported ' + state.history.length + ' trades');
+  });
+
+  // ---------- Setup ----------
+  let confirmArmed = false;
+  function openSetup() {
+    $('sStart').value = state.start;
+    $('sUnit').value = state.unit;
+    $('sPct').value = state.pct;
+    $('sSteps').value = state.steps;
+    confirmArmed = false;
+    $('saveSetup').textContent = 'Start climb';
+    $('sWarn').hidden = true;
+    updatePreview();
+    $('sheetBack').hidden = false;
+    setTimeout(() => $('sStart').focus(), 50);
+  }
+  function closeSetup() { $('sheetBack').hidden = true; }
+  function readSetup() {
+    const start = parseNum($('sStart').value), pct = parseNum($('sPct').value), steps = Math.round(parseNum($('sSteps').value));
+    const unit = $('sUnit').value.trim().slice(0, 8) || 'USDT';
+    if (!(start > 0)) return { error: 'Starting amount must be above 0.' };
+    if (!(pct > 0 && pct <= 1000)) return { error: 'Gain per step must be between 0 and 1000%.' };
+    if (!(steps >= 1 && steps <= 500)) return { error: 'Number of steps must be between 1 and 500.' };
+    return { start: r2(start), pct, steps, unit };
+  }
+  function updatePreview() {
+    const s = readSetup();
+    if (s.error) { $('sPreview').innerHTML = esc(s.error); return; }
+    const t = targets(s);
+    const fin = t[t.length - 1];
+    let x10k = '';
+    const hit = t.findIndex((v, i) => i > 0 && v / s.start >= 10000);
+    if (hit > 0) x10k = '<span>10,000X is reached at trade <b>' + hit + '</b></span>';
+    $('sPreview').innerHTML =
+      '<span>Trade 1 target: <b>' + fmt(t[1]) + ' ' + esc(s.unit) + '</b></span>' +
+      '<span>Final target (trade ' + s.steps + '): <b>' + fmt(fin) + ' ' + esc(s.unit) + '</b></span>' +
+      '<span>Total growth: <b>' + fmtX(fin / s.start) + '</b></span>' + x10k;
+  }
+  ['sStart', 'sPct', 'sSteps', 'sUnit'].forEach((id) => $(id).addEventListener('input', () => {
+    updatePreview();
+    if (confirmArmed) { confirmArmed = false; $('saveSetup').textContent = 'Start climb'; $('sWarn').hidden = true; }
+  }));
+  $('setupForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const s = readSetup();
+    if (s.error) { $('sWarn').textContent = s.error; $('sWarn').hidden = false; return; }
+    const hasReal = !state.sample && state.history.length > 0;
+    if (hasReal && !confirmArmed) {
+      confirmArmed = true;
+      $('sWarn').textContent = 'Starting a new climb clears your ' + state.history.length + ' recorded trades. Tap again to confirm.';
+      $('sWarn').hidden = false;
+      $('saveSetup').textContent = 'Yes, start new climb';
+      return;
+    }
+    state = { sample: false, startedAt: Date.now(), start: s.start, pct: s.pct, steps: s.steps, unit: s.unit, amount: s.start, history: [] };
+    save();
+    closeSetup();
+    render(true);
+    toast('New climb started. First target: ' + fmt(targets(state)[1]));
+  });
+  $('openSetup').addEventListener('click', openSetup);
+  $('startOwn').addEventListener('click', openSetup);
+  $('cancelSetup').addEventListener('click', closeSetup);
+  $('sheetBack').addEventListener('click', (e) => { if (e.target === $('sheetBack')) closeSetup(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheetBack').hidden) closeSetup(); });
+
+  // ---------- Hero tilt ----------
+  const hero = $('hero');
+  if (!reduceMotion && window.matchMedia('(hover: hover)').matches) {
+    hero.addEventListener('pointermove', (e) => {
+      const r = hero.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+      hero.style.transform = 'rotateX(' + (-y * 7).toFixed(2) + 'deg) rotateY(' + (x * 9).toFixed(2) + 'deg)';
+    });
+    hero.addEventListener('pointerleave', () => { hero.style.transform = ''; });
+  }
+
+  // ---------- Toast ----------
+  let toastEl = null, toastTimer = null;
+  function toast(msg, quiet) {
+    if (toastEl) toastEl.remove();
+    clearTimeout(toastTimer);
+    toastEl = document.createElement('div');
+    toastEl.className = 'toast' + (quiet ? ' loss' : '');
+    toastEl.setAttribute('role', 'status');
+    toastEl.textContent = msg;
+    document.body.appendChild(toastEl);
+    toastTimer = setTimeout(() => { if (toastEl) { toastEl.remove(); toastEl = null; } }, 2600);
+  }
+
+  // ---------- Confetti ----------
+  const cv = $('confetti'), ctx = cv.getContext('2d');
+  let parts = [], raf = null;
+  const COLORS = ['#9BE7FF', '#4AA8FF', '#D9F6FF', '#3EE0A1', '#25D0C6', '#7D6BFF', '#FF6F7D', '#EEF0FF'];
+  function sizeCanvas() { const d = window.devicePixelRatio || 1; cv.width = innerWidth * d; cv.height = innerHeight * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
+  function confetti(power) {
+    if (reduceMotion) return;
+    sizeCanvas();
+    const count = 90 * power;
+    const bursts = power >= 2 ? [0.2, 0.5, 0.8] : [0.5];
+    bursts.forEach((bx) => {
+      for (let i = 0; i < count / bursts.length; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+        const sp = 7 + Math.random() * 9;
+        parts.push({
+          x: innerWidth * bx, y: innerHeight * 0.38,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+          w: 6 + Math.random() * 6, h: 4 + Math.random() * 8,
+          rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.35,
+          flip: Math.random() * 6, vf: 0.08 + Math.random() * 0.15,
+          shape: Math.floor(Math.random() * 3),
+          c: COLORS[Math.floor(Math.random() * COLORS.length)], life: 0
+        });
+      }
+    });
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  function tick() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    parts = parts.filter((p) => p.y < innerHeight + 40 && p.life < 360);
+    parts.forEach((p) => {
+      p.life++; p.vy += 0.22; p.vx *= 0.985; p.vy *= 0.985;
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.flip += p.vf;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.flip));
+      ctx.fillStyle = p.c;
+      if (p.shape === 0) ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      else if (p.shape === 1) { ctx.beginPath(); ctx.arc(0, 0, p.w / 2.4, 0, Math.PI * 2); ctx.fill(); }
+      else { ctx.beginPath(); ctx.moveTo(0, -p.w / 2); ctx.lineTo(p.w / 2, p.w / 2); ctx.lineTo(-p.w / 2, p.w / 2); ctx.closePath(); ctx.fill(); }
+      ctx.restore();
+    });
+    if (parts.length) raf = requestAnimationFrame(tick); else { raf = null; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+  }
+  addEventListener('resize', () => { if (raf) sizeCanvas(); });
+
+  render(true);
+
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+
+</body>
+</html>
