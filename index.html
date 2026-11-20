@@ -507,7 +507,7 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 .ticker-track { display: flex; width: max-content; }
 .ticker-track span { white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 14px; display: inline-flex; align-items: center; gap: 28px; }
 .ticker-track span::after { content: "◆"; font-size: 8px; color: var(--gold); opacity: 0.6; }
-.ticker.static .ticker-track { width: auto; justify-content: center; }
+.ticker-track { animation: marquee var(--dur, 60s) linear infinite; }
 
 /* ---------- Ladder markers ---------- */
 .mk { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; margin-left: 6px; font-family: var(--font-body); letter-spacing: 0.03em; white-space: nowrap; }
@@ -515,7 +515,8 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 .mk.pace { border: 1px solid rgba(255,255,255,0.45); color: #fff; }
 
 /* ---------- Cooling hours ---------- */
-.dock-row { justify-content: space-between; }
+.dock-row { justify-content: flex-end; min-height: 28px; margin-top: 6px; }
+.dock-row .err { margin-right: auto; }
 .dock-note { font-size: 12px; color: var(--faint); text-align: right; }
 .cool-panel { display: none; }
 body.cooling .app > *:not(.top):not(.motto) { filter: grayscale(1) brightness(0.62); transition: filter 0.6s; }
@@ -575,7 +576,6 @@ body.cooling .cool-panel {
   .dayring { width: 64px; height: 64px; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .ticker:not(.static) .ticker-track { animation: marquee var(--dur, 60s) linear infinite; }
   .status i { animation: twinkle 2.4s ease-in-out infinite; }
   body.cooling .cool-panel { animation: rise-in 0.5s cubic-bezier(.2,.8,.2,1) both; }
   .app > *:nth-child(7) { animation-delay: 0.4s; }
@@ -711,7 +711,6 @@ body.cooling .cool-panel {
       <button class="btn" type="submit">Save</button>
     </form>
     <div class="dock-row">
-      <button class="chip win" type="button" id="hitBtn">Hit next target</button>
       <div class="err" id="recErr" hidden></div>
       <div class="dock-note" id="dockNote"></div>
     </div>
@@ -1179,12 +1178,6 @@ body.cooling .cool-panel {
     $('newAmt').blur();
     record(r2(v));
   });
-  $('hitBtn').addEventListener('click', () => {
-    const t = targets(state);
-    const lvl = levelOf(state.amount, t);
-    if (lvl >= state.steps) return;
-    record(t[lvl + 1]);
-  });
   $('undoBtn').addEventListener('click', () => {
     if (blockedByCooling()) return;
     const h = state.history.pop();
@@ -1343,13 +1336,6 @@ body.cooling .cool-panel {
   // ---------- Slogan ticker ----------
   (function ticker() {
     const track = $('tickerTrack');
-    if (reduceMotion) {
-      $('ticker').classList.add('static');
-      let i = 0;
-      const show = () => { track.innerHTML = '<span>' + esc(SLOGANS[i % SLOGANS.length]) + '</span>'; i++; };
-      show(); setInterval(show, 7000);
-      return;
-    }
     const one = SLOGANS.map((s) => '<span>' + esc(s) + '</span>').join('');
     track.innerHTML = one + SLOGANS.map((s) => '<span aria-hidden="true">' + esc(s) + '</span>').join('');
     track.style.setProperty('--dur', Math.round(SLOGANS.join(' ').length * 0.32) + 's');
