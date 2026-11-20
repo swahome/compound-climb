@@ -449,6 +449,140 @@ button, input, label { touch-action: manipulation; }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
 .h-actions { display: flex; gap: 14px; }
 body { padding-top: env(safe-area-inset-top, 0px); }
+
+/* ---------- Header status + motto ---------- */
+.top-r { display: flex; align-items: center; gap: 8px; }
+.status {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 40px;
+  padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: rgba(62,224,161,0.10); border: 1px solid rgba(62,224,161,0.28); color: var(--mint);
+}
+.status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+.status.cool { background: rgba(152,160,200,0.12); border-color: rgba(152,160,200,0.3); color: #C9CFEA; }
+.status.off { display: none; }
+.motto {
+  margin: -2px 0 0; display: flex; gap: 10px; align-items: flex-start;
+  font-family: var(--font-display); font-weight: 500; font-size: clamp(15px, 4.4vw, 18px); line-height: 1.35; letter-spacing: -0.005em;
+}
+.motto .q { font-size: 34px; line-height: 0.9; color: var(--gold); opacity: 0.7; font-weight: 700; flex: none; }
+.motto span.t { background: linear-gradient(100deg, #FFFFFF 0%, var(--gold) 70%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ---------- Today + plan ---------- */
+.pace { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.today { display: grid; grid-template-columns: 74px 1fr; gap: 14px; align-items: center; position: relative; overflow: hidden; }
+.today.hit { border-color: rgba(62,224,161,0.4); background: linear-gradient(120deg, rgba(62,224,161,0.12), rgba(20,26,58,0.72) 60%); }
+.dayring { position: relative; width: 74px; height: 74px; }
+.dayring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.dayring circle { fill: none; stroke-width: 7; }
+.dayring .trk { stroke: rgba(255,255,255,0.08); }
+.dayring .arc { stroke: url(#ringGrad); stroke-linecap: round; transition: stroke-dashoffset 0.8s cubic-bezier(.2,.8,.2,1); filter: drop-shadow(0 0 6px rgba(155,231,255,0.5)); }
+.today.hit .dayring .arc { stroke: var(--mint); filter: drop-shadow(0 0 6px rgba(62,224,161,0.6)); }
+.ring-in { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1.05; }
+.ring-in b { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+.ring-in small { display: block; font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; }
+.today-main { min-width: 0; }
+.today-val { font-family: var(--font-num); font-weight: 600; font-size: 20px; margin-top: 2px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.today-val small { font-family: var(--font-body); font-size: 12px; color: var(--muted); margin-left: 4px; }
+.today-st { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.today-st b { font-family: var(--font-num); color: var(--gold); font-weight: 600; }
+.badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px; letter-spacing: 0.02em; }
+.badge.ok { background: rgba(62,224,161,0.16); color: var(--mint); border: 1px solid rgba(62,224,161,0.35); }
+.badge.go { background: rgba(155,231,255,0.12); color: var(--gold); border: 1px solid rgba(155,231,255,0.3); }
+.badge.bad { background: rgba(255,111,125,0.12); color: var(--coral); border: 1px solid rgba(255,111,125,0.3); }
+.badge.even { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); }
+.plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.plan-grid > div { min-width: 0; }
+.plan-v { font-family: var(--font-num); font-weight: 600; font-size: 16px; margin-top: 3px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.plan-s { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.plan-foot { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.journey .bar { position: relative; overflow: visible; }
+.journey .bar i { border-radius: 99px; }
+.pace-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.8); transition: left 0.6s cubic-bezier(.2,.8,.2,1); }
+.legend-key { display: inline-flex; align-items: center; gap: 5px; }
+.legend-key::before { content: ""; width: 2px; height: 10px; background: #fff; border-radius: 2px; }
+
+/* ---------- Slogan ticker ---------- */
+.ticker { position: relative; overflow: hidden; border-block: 1px solid var(--line); padding: 10px 0; margin-inline: -16px;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.ticker-track { display: flex; width: max-content; }
+.ticker-track span { white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 14px; display: inline-flex; align-items: center; gap: 28px; }
+.ticker-track span::after { content: "◆"; font-size: 8px; color: var(--gold); opacity: 0.6; }
+.ticker.static .ticker-track { width: auto; justify-content: center; }
+
+/* ---------- Ladder markers ---------- */
+.mk { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; margin-left: 6px; font-family: var(--font-body); letter-spacing: 0.03em; white-space: nowrap; }
+.mk.day { border: 1px solid rgba(62,224,161,0.55); color: var(--mint); }
+.mk.pace { border: 1px solid rgba(255,255,255,0.45); color: #fff; }
+
+/* ---------- Cooling hours ---------- */
+.dock-row { justify-content: space-between; }
+.dock-note { font-size: 12px; color: var(--faint); text-align: right; }
+.cool-panel { display: none; }
+body.cooling .app > *:not(.top):not(.motto) { filter: grayscale(1) brightness(0.62); transition: filter 0.6s; }
+body.cooling .hero::after, body.cooling .need, body.cooling .bar i::after { animation: none; }
+body.cooling .app button:not(#openSetup):not(#statusBtn) { pointer-events: none; }
+body.cooling .dock .dock-in > *:not(.cool-panel) { display: none; }
+body.cooling .cool-panel {
+  display: block; position: relative; overflow: hidden;
+  background: rgba(18,24,56,0.94); border: 1px solid rgba(200,210,255,0.18); border-radius: 20px;
+  padding: 16px 18px; box-shadow: 0 -10px 30px -12px rgba(0,0,0,0.7);
+}
+.cool-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cool-head .label { display: inline-flex; align-items: center; gap: 6px; color: #C9CFEA; }
+.cool-head svg { width: 14px; height: 14px; }
+.cool-at { font-size: 12px; color: var(--muted); }
+.countdown { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 11vw, 46px); line-height: 1.05; margin-top: 6px; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; color: #E3E8FF; }
+.countdown small { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
+.cool-bar { margin-top: 10px; height: 4px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.cool-bar i { display: block; height: 100%; background: linear-gradient(90deg, #626A94, #C9CFEA); border-radius: inherit; transition: width 1s linear; }
+.cool-motto { margin-top: 10px; font-size: 13px; color: var(--muted); font-style: italic; }
+
+/* ---------- Setup additions ---------- */
+.grp { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.grp-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.grp-h h3 { margin: 0; font-family: var(--font-display); font-size: 14px; font-weight: 500; }
+.grp p.sub { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.sw { position: relative; width: 48px; height: 28px; flex: none; }
+.sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.sw span { position: absolute; inset: 0; border-radius: 99px; background: rgba(255,255,255,0.12); border: 1px solid var(--line); transition: background 0.2s; }
+.sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.2s cubic-bezier(.2,.8,.2,1); }
+.sw input:checked + span { background: linear-gradient(145deg, var(--gold), var(--gold-deep)); }
+.sw input:checked + span::after { transform: translateX(20px); }
+.sw input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+.f input[type="time"] { color-scheme: dark; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+.day { min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; font-weight: 700; color: var(--muted); padding: 0; }
+.day[aria-pressed="true"] { background: rgba(155,231,255,0.16); border-color: rgba(155,231,255,0.5); color: var(--gold); }
+.cool-fields[aria-disabled="true"] { opacity: 0.4; pointer-events: none; }
+.note { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.note b { color: var(--fg); font-family: var(--font-num); font-weight: 600; }
+
+.brand-name { white-space: nowrap; }
+@media (max-width: 440px) {
+  #openSetup .txt { display: none; }
+  #openSetup { padding: 0 12px; }
+}
+@media (max-width: 380px) {
+  .brand { gap: 8px; }
+  .brand-name { font-size: 14px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .top-r { gap: 6px; }
+  .status { padding: 0 10px; }
+}
+@media (max-width: 360px) {
+  .plan-v { font-size: 14px; }
+  .today { grid-template-columns: 64px 1fr; gap: 12px; }
+  .dayring { width: 64px; height: 64px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ticker:not(.static) .ticker-track { animation: marquee var(--dur, 60s) linear infinite; }
+  .status i { animation: twinkle 2.4s ease-in-out infinite; }
+  body.cooling .cool-panel { animation: rise-in 0.5s cubic-bezier(.2,.8,.2,1) both; }
+  .app > *:nth-child(7) { animation-delay: 0.4s; }
+  .app > *:nth-child(8) { animation-delay: 0.46s; }
+  .app > *:nth-child(9) { animation-delay: 0.52s; }
+}
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 </style>
 
 </head>
@@ -468,11 +602,16 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       </div>
       <span class="brand-name">Compound Climb</span>
     </div>
-    <button class="icon-btn" id="openSetup" type="button">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.2" stroke="currentColor" stroke-width="2"/></svg>
-      Setup
-    </button>
+    <div class="top-r">
+      <button class="status off" id="statusBtn" type="button"><i aria-hidden="true"></i><span id="statusTxt">Open</span></button>
+      <button class="icon-btn" id="openSetup" type="button" aria-label="Setup">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.2" stroke="currentColor" stroke-width="2"/></svg>
+        <span class="txt">Setup</span>
+      </button>
+    </div>
   </header>
+
+  <p class="motto"><span class="q" aria-hidden="true">“</span><span class="t" id="motto">A live dog is better than a dead lion.</span></p>
 
   <div class="banner" id="sampleBanner" hidden>
     <span>You're looking at sample trades.</span>
@@ -502,6 +641,38 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     </div>
   </section>
 
+  <section class="pace" aria-label="Daily target and plan">
+    <div class="card today" id="todayCard">
+      <div class="dayring" aria-hidden="true">
+        <svg viewBox="0 0 74 74">
+          <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4AA8FF"/><stop offset="1" stop-color="#9BE7FF"/></linearGradient></defs>
+          <circle class="trk" cx="37" cy="37" r="31"/>
+          <circle class="arc" id="ringArc" cx="37" cy="37" r="31" stroke-dasharray="194.8" stroke-dashoffset="194.8"/>
+        </svg>
+        <div class="ring-in"><div><b id="ringNum">0</b><small id="ringOf">of 0</small></div></div>
+      </div>
+      <div class="today-main">
+        <div class="label" id="dayLabel">Today's target</div>
+        <div class="today-val" id="dayVal">0</div>
+        <div class="today-st" id="daySt"></div>
+      </div>
+    </div>
+    <div class="card plan">
+      <div class="plan-grid">
+        <div>
+          <div class="label">Last trade expected</div>
+          <div class="plan-v" id="endDate">—</div>
+          <div class="plan-s" id="endSub"></div>
+        </div>
+        <div>
+          <div class="label">On pace by now</div>
+          <div class="plan-v" id="paceAmt">0</div>
+          <div class="plan-s" id="paceSub"></div>
+        </div>
+      </div>
+      <div class="plan-foot"><span id="planTxt"></span><span class="badge" id="paceBadge"></span></div>
+    </div>
+  </section>
 
   <section aria-label="Stats">
     <div class="stats">
@@ -510,11 +681,13 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       <div class="stat"><div class="label">Growth</div><b id="growth">1.00X</b></div>
     </div>
     <div class="journey card" style="margin-top:8px">
-      <div class="section-h" style="margin-bottom:0"><h2>Journey to the goal</h2><span id="journeyTxt"></span></div>
-      <div class="bar"><i id="journeyBar"></i></div>
-      <div class="bar-legend"><span id="jFrom"></span><span id="jTo"></span></div>
+      <div class="section-h" style="margin-bottom:10px"><h2>Journey to the goal</h2><span id="journeyTxt"></span></div>
+      <div class="bar"><i id="journeyBar"></i><span class="pace-mark" id="paceMark" title="Where the plan says you should be now"></span></div>
+      <div class="bar-legend"><span id="jFrom"></span><span class="legend-key">pace</span><span id="jTo"></span></div>
     </div>
   </section>
+
+  <div class="ticker" id="ticker" aria-label="Trading reminders"><div class="ticker-track" id="tickerTrack"></div></div>
 
   <section class="card" aria-labelledby="ladH">
     <div class="section-h"><h2 id="ladH">Target ladder</h2><span id="ladSub"></span></div>
@@ -540,6 +713,16 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     <div class="dock-row">
       <button class="chip win" type="button" id="hitBtn">Hit next target</button>
       <div class="err" id="recErr" hidden></div>
+      <div class="dock-note" id="dockNote"></div>
+    </div>
+    <div class="cool-panel" role="status" aria-live="polite">
+      <div class="cool-head">
+        <span class="label"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>Cooling hours</span>
+        <span class="cool-at" id="coolAt"></span>
+      </div>
+      <div class="countdown" id="countdown">00:00:00</div>
+      <div class="cool-bar"><i id="coolBar"></i></div>
+      <div class="cool-motto">Rest now. A live dog is better than a dead lion.</div>
     </div>
   </div>
 </section>
@@ -555,6 +738,31 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       <div class="f"><label for="sSteps">Number of steps</label><input id="sSteps" inputmode="numeric"></div>
     </div>
     <div class="preview" id="sPreview"></div>
+
+    <div class="grp">
+      <div class="grp-h"><h3>Daily pace</h3></div>
+      <p class="sub">How many targets you aim to hit each day.</p>
+      <div class="grid2">
+        <div class="f"><label for="sTpd">Target trades per day</label><input id="sTpd" inputmode="numeric"></div>
+      </div>
+      <div class="note" id="sPaceNote"></div>
+    </div>
+
+    <div class="grp">
+      <div class="grp-h">
+        <h3 id="coolH">Cooling hours</h3>
+        <label class="sw"><input type="checkbox" id="sCoolOn" aria-labelledby="coolH"><span></span></label>
+      </div>
+      <p class="sub">No updates in this window. The app greys out and counts down to opening.</p>
+      <div class="cool-fields" id="coolFields">
+        <div class="grid2">
+          <div class="f"><label for="sFrom">From</label><input id="sFrom" type="time"></div>
+          <div class="f"><label for="sTo">Until</label><input id="sTo" type="time"></div>
+        </div>
+        <div class="days" id="sDays" role="group" aria-label="Cooling days"></div>
+      </div>
+    </div>
+
     <div class="warn" id="sWarn" hidden></div>
     <div class="sheet-actions">
       <button class="ghost" type="button" id="cancelSetup">Cancel</button>
@@ -567,6 +775,23 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 (function () {
   const KEY = 'compound-climb-v1';
   const MILESTONES = [10, 100, 1000, 10000, 100000];
+  const DEFAULT_COOL = { on: true, from: '09:00', to: '17:00', days: [1, 2, 3, 4, 5] };
+  const DEFAULT_TPD = 5;
+  const SLOGANS = [
+    'Protect the capital and the profits will follow.',
+    'Live to trade another day.',
+    'Cut losses short, let winners run.',
+    'The market opens again tomorrow. Make sure you do too.',
+    'No trade is also a position.',
+    'Plan the trade, trade the plan.',
+    'Small steps, compounded, climb mountains.',
+    'Survive first, thrive later.',
+    'Discipline beats prediction.',
+    'Revenge trades cost more than missed trades.',
+    'Slow is smooth, smooth is fast.',
+    'Patience is a position too.'
+  ];
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const $ = (id) => document.getElementById(id);
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -574,7 +799,8 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     const t0 = Date.now();
     const h = 36e5;
     return {
-      sample: true, start: 10, pct: 10, steps: 100, unit: 'USDT', amount: 13.6, startedAt: t0 - 101 * h,
+      sample: true, start: 10, pct: 10, steps: 100, unit: 'USDT', amount: 13.6, startedAt: t0 - 101 * h, planStart: t0 - 101 * h,
+      tpd: DEFAULT_TPD, cool: Object.assign({}, DEFAULT_COOL, { days: DEFAULT_COOL.days.slice() }),
       history: [
         { at: t0 - 94 * h, from: 10, to: 11.05 },
         { at: t0 - 63 * h, from: 11.05, to: 12.2 },
@@ -587,6 +813,14 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 
   let state = load() || sample();
 
+  function withDefaults(s) {
+    if (!(s.tpd >= 1)) s.tpd = DEFAULT_TPD;
+    if (!s.cool || typeof s.cool !== 'object') s.cool = Object.assign({}, DEFAULT_COOL, { days: DEFAULT_COOL.days.slice() });
+    if (!Array.isArray(s.cool.days)) s.cool.days = DEFAULT_COOL.days.slice();
+    if (!s.startedAt) s.startedAt = (s.history[0] && s.history[0].at) || Date.now();
+    if (!s.planStart) s.planStart = s.startedAt;
+    return s;
+  }
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
@@ -594,17 +828,52 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       const s = JSON.parse(raw);
       if (s.sample || typeof s.start !== 'number' || typeof s.amount !== 'number') return null;
       s.history = Array.isArray(s.history) ? s.history : [];
-      return s;
+      return withDefaults(s);
     } catch (e) { return null; }
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
   const r2 = (n) => Math.round(n * 100) / 100;
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const fmt = (n) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   const fmtX = (n) => (n >= 100 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n) : n.toFixed(2)) + 'X';
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const parseNum = (v) => { const n = parseFloat(String(v).replace(/,/g, '').trim()); return isFinite(n) ? n : NaN; };
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
+  // ---------- Calendar helpers (local time, DST-safe) ----------
+  const DAY_MS = 864e5;
+  const midnight = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const addDays = (ms, n) => { const d = new Date(ms); d.setDate(d.getDate() + n); return d.getTime(); };
+  const daysBetween = (a, b) => Math.round((midnight(b) - midnight(a)) / DAY_MS);
+  const mins = (s) => { const p = String(s).split(':'); return (+p[0]) * 60 + (+p[1] || 0); };
+  const atMins = (dayMs, m) => { const d = new Date(dayMs); d.setHours(Math.floor(m / 60), m % 60, 0, 0); return d.getTime(); };
+  const fmtDate = (ms) => new Date(ms).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const fmtTime = (ms) => new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  const fmtWhen = (ms) => { const d = new Date(ms); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' · ' + fmtTime(ms); };
+  function dayWord(ms, now) {
+    const d = daysBetween(now, ms);
+    if (d === 0) return 'today';
+    if (d === 1) return 'tomorrow';
+    return new Date(ms).toLocaleDateString(undefined, { weekday: 'short' });
+  }
+  function fmtDur(ms) {
+    const m = Math.round(ms / 6e4);
+    if (m < 1) return '<1m';
+    if (m < 60) return m + 'm';
+    const hrs = Math.floor(m / 60);
+    if (hrs < 24) return hrs + 'h' + (hrs < 10 && m % 60 ? ' ' + (m % 60) + 'm' : '');
+    const d = Math.floor(hrs / 24);
+    return d + 'd' + (hrs % 24 ? ' ' + (hrs % 24) + 'h' : '');
+  }
+  function fmtClock(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60, sec = s % 60;
+    const p = (n) => String(n).padStart(2, '0');
+    return (d ? d + 'd ' : '') + p(h) + ':' + p(m) + ':' + p(sec);
+  }
+
+  // ---------- Ladder maths ----------
   function targets(s) {
     const out = [r2(s.start)];
     const g = 1 + s.pct / 100;
@@ -625,17 +894,6 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     }
     return map;
   }
-
-  function fmtDur(ms) {
-    const m = Math.round(ms / 6e4);
-    if (m < 1) return '<1m';
-    if (m < 60) return m + 'm';
-    const hrs = Math.floor(m / 60);
-    if (hrs < 24) return hrs + 'h' + (hrs < 10 && m % 60 ? ' ' + (m % 60) + 'm' : '');
-    const d = Math.floor(hrs / 24);
-    return d + 'd' + (hrs % 24 ? ' ' + (hrs % 24) + 'h' : '');
-  }
-  const fmtWhen = (ms) => { const d = new Date(ms); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); };
   const CLOCK = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
   // When each target was (most recently) reached; a drop below a target clears it until it is hit again.
   function hitTimes(t) {
@@ -646,6 +904,50 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       else if (b < a) for (let i = b + 1; i <= a; i++) delete hit[i];
     });
     return hit;
+  }
+
+  // ---------- Cooling hours ----------
+  // A window starts on each chosen weekday at `from` and ends at `to` (the next day when `to` is earlier than `from`).
+  function coolInfo(now) {
+    const c = state.cool;
+    if (!c || !c.on || !c.days.length) return { on: false, active: false, next: null };
+    const f = mins(c.from), e = mins(c.to);
+    if (f === e) return { on: false, active: false, next: null };
+    const today = midnight(now);
+    let active = null, next = null;
+    for (let i = -1; i <= 8; i++) {
+      const day = addDays(today, i);
+      if (c.days.indexOf(new Date(day).getDay()) < 0) continue;
+      const s = atMins(day, f), end = f < e ? atMins(day, e) : atMins(addDays(day, 1), e);
+      if (now >= s && now < end) { if (!active || end > active.end) active = { start: s, end }; }
+      else if (s > now && (next === null || s < next)) next = s;
+    }
+    if (active) return { on: true, active: true, start: active.start, until: active.end };
+    return { on: true, active: false, next };
+  }
+
+  // ---------- Daily target + plan ----------
+  function dayInfo(t, lvl, now) {
+    const mid = midnight(now);
+    let startAmt = null;
+    for (let i = 0; i < state.history.length; i++) { if (state.history[i].at < mid) startAmt = state.history[i].to; }
+    if (startAmt === null) startAmt = state.history.length ? state.history[0].from : state.amount;
+    const startLvl = levelOf(startAmt, t);
+    const goalStep = Math.min(state.steps, startLvl + state.tpd);
+    const goalTrades = goalStep - startLvl;
+    const made = Math.max(0, lvl - startLvl);
+    return { startLvl, goalStep, goalTrades, made, goal: t[goalStep], done: lvl >= goalStep, need: Math.max(0, t[goalStep] - state.amount) };
+  }
+  // The plan runs from the climb's first day to the day the last target is due at `tpd` trades a day.
+  // "On pace" is the step reached if targets came in proportionally to the time elapsed in that period.
+  function planInfo(t, now) {
+    const start = midnight(state.planStart || state.startedAt || now);
+    const days = Math.ceil(state.steps / state.tpd);
+    const endDay = addDays(start, days - 1);
+    const endAt = addDays(start, days);
+    const frac = clamp((now - start) / (endAt - start), 0, 1);
+    const paceStep = Math.min(state.steps, Math.floor(frac * state.steps + 1e-9));
+    return { start, days, endDay, frac, paceStep, paceAmt: t[paceStep], daysLeft: daysBetween(now, endDay), dayNo: daysBetween(start, now) + 1 };
   }
 
   // ---------- Motion helpers ----------
@@ -675,12 +977,17 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
   }
 
+  let lastKey = '';
   function render(scrollLadder) {
+    const now = Date.now();
     const t = targets(state);
     const lvl = levelOf(state.amount, t);
     const done = lvl >= state.steps;
     const nextIdx = done ? state.steps : lvl + 1;
     const unit = esc(state.unit || '');
+    const day = dayInfo(t, lvl, now);
+    const plan = planInfo(t, now);
+    lastKey = midnight(now) + ':' + plan.paceStep;
 
     $('sampleBanner').hidden = !state.sample;
     tween($('amount'), state.amount, (v) => fmt(v) + '<small>' + unit + '</small>');
@@ -701,19 +1008,48 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     $('fromLbl').textContent = lvl === 0 ? 'Start ' + fmt(floor) : 'Trade ' + lvl + ' · ' + fmt(floor);
     $('toLbl').textContent = done ? '' : fmt(target);
 
+    // Today
+    const ring = day.goalTrades ? Math.min(1, day.made / day.goalTrades) : 1;
+    $('ringArc').style.strokeDashoffset = (194.8 * (1 - ring)).toFixed(1);
+    setText($('ringNum'), day.made);
+    $('ringOf').textContent = 'of ' + day.goalTrades;
+    $('todayCard').classList.toggle('hit', day.done);
+    $('dayLabel').textContent = "Today's target · Trade " + day.goalStep;
+    tween($('dayVal'), day.goal, (v) => fmt(v) + '<small>' + unit + '</small>');
+    if (day.done) {
+      $('daySt').innerHTML = '<span class="badge ok">Achieved ✓</span><span>' + (day.made > day.goalTrades ? plural(day.made - day.goalTrades, 'bonus trade') : 'Well done. Rest well.') + '</span>';
+    } else {
+      $('daySt').innerHTML = '<span class="badge go">In progress</span><span><b>+' + fmt(day.need) + '</b> to go · ' + plural(day.goalStep - lvl, 'trade') + ' left</span>';
+    }
+
+    // Plan
+    $('endDate').textContent = fmtDate(plan.endDay);
+    $('endSub').textContent = done ? 'Climb complete' : plan.daysLeft > 0 ? 'in ' + plural(plan.daysLeft, 'day') : plan.daysLeft === 0 ? 'today' : plural(-plan.daysLeft, 'day') + ' ago';
+    tween($('paceAmt'), plan.paceAmt, (v) => fmt(v));
+    $('paceSub').textContent = (plan.paceStep ? 'Trade ' + plan.paceStep : 'Start') + ' · ' + Math.round(plan.frac * 100) + '% of time';
+    $('planTxt').textContent = 'Day ' + clamp(plan.dayNo, 1, plan.days) + ' of ' + plan.days + ' · ' + state.tpd + ' a day';
+    const diff = lvl - plan.paceStep;
+    const pb = $('paceBadge');
+    if (done) { pb.className = 'badge ok'; pb.textContent = 'Summit reached'; }
+    else if (diff > 0) { pb.className = 'badge ok'; pb.textContent = plural(diff, 'trade') + ' ahead'; }
+    else if (diff < 0) { pb.className = 'badge bad'; pb.textContent = plural(-diff, 'trade') + ' behind'; }
+    else { pb.className = 'badge even'; pb.textContent = 'On pace'; }
+
+    // Stats + journey
     let wins = 0, losses = 0;
     state.history.forEach((h) => { if (h.to > h.from) wins++; else if (h.to < h.from) losses++; });
     setText($('wins'), wins);
     setText($('losses'), losses);
     setText($('growth'), fmtX(state.amount / state.start));
-
     const finalX = t[t.length - 1] / state.start;
     const jp = state.amount <= state.start ? 0 : Math.min(100, (Math.log(state.amount / state.start) / Math.log(finalX)) * 100);
     setBar($('journeyBar'), jp);
+    $('paceMark').style.left = (plan.paceStep / state.steps * 100).toFixed(1) + '%';
     $('journeyTxt').textContent = lvl + ' of ' + state.steps + ' steps';
     $('jFrom').textContent = fmt(state.start);
     $('jTo').textContent = fmt(t[t.length - 1]) + ' (' + fmtX(finalX) + ')';
 
+    // Ladder
     $('ladSub').textContent = state.pct + '% per step · time between hits';
     const miles = milestoneAt(t, state.start);
     const hit = hitTimes(t);
@@ -723,7 +1059,9 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       const isDone = i <= lvl;
       const isNext = i === nextIdx && !done;
       const cls = 'rung' + (isDone ? ' done' : '') + (isNext ? ' is-next' : '');
-      const mile = miles[i] ? '<span class="mile">' + fmtX(miles[i]) + '</span>' : '';
+      let marks = miles[i] ? '<span class="mile">' + fmtX(miles[i]) + '</span>' : '';
+      if (i === day.goalStep && !day.done) marks += '<span class="mk day">Today</span>';
+      if (i === plan.paceStep && !done) marks += '<span class="mk pace">Pace</span>';
       const prevAt = i === 1 ? began : hit[i - 1];
       let when = '', x;
       if (isDone && hit[i]) {
@@ -732,7 +1070,7 @@ body { padding-top: env(safe-area-inset-top, 0px); }
         else if (prevAt != null) x = '<span class="dur" title="Time since the previous target">' + CLOCK + fmtDur(hit[i] - prevAt) + '</span>';
         else x = fmtX(t[i] / state.start);
       } else if (isNext) {
-        if (prevAt != null) when = '<span class="when">climbing for ' + fmtDur(Date.now() - prevAt) + '</span>';
+        if (prevAt != null) when = '<span class="when">climbing for ' + fmtDur(now - prevAt) + '</span>';
         x = '<span class="tag">Next</span>';
       } else {
         x = fmtX(t[i] / state.start);
@@ -740,16 +1078,19 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       html += '<div class="' + cls + '" role="listitem"' + (isNext ? ' id="nextRung"' : '') + '>' +
         '<span class="node" aria-hidden="true"></span>' +
         '<span class="n">Trade ' + i + '</span>' +
-        '<span class="v">' + fmt(t[i]) + mile + when + '</span>' +
+        '<span class="v">' + fmt(t[i]) + marks + when + '</span>' +
         '<span class="x">' + x + '</span></div>';
     }
-    $('ladder').innerHTML = html;
+    const lad = $('ladder');
+    const keep = lad.scrollTop;
+    lad.innerHTML = html;
     if (scrollLadder) {
-      const lad = $('ladder'), nr = $('nextRung');
+      const nr = $('nextRung');
       if (nr) lad.scrollTop = Math.max(0, nr.offsetTop - lad.offsetTop - 110);
       else lad.scrollTop = lad.scrollHeight;
-    }
+    } else lad.scrollTop = keep;
 
+    // History
     $('histSub').textContent = state.history.length ? '· ' + state.history.length : '';
     if (!state.history.length) {
       $('hist').innerHTML = '<li class="empty" style="display:block;background:none">No trades yet. Save your amount after each trade.</li>';
@@ -767,12 +1108,48 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     }
     $('undoBtn').disabled = !state.history.length;
     $('undoBtn').style.opacity = state.history.length ? 1 : 0.4;
+    renderClock(now);
+  }
+
+  // Cooling state, header status and countdown. Runs every second.
+  let wasCooling = null;
+  function renderClock(now) {
+    const c = coolInfo(now);
+    const cooling = c.active;
+    document.body.classList.toggle('cooling', cooling);
+    const st = $('statusBtn');
+    st.className = 'status' + (!c.on ? ' off' : cooling ? ' cool' : '');
+    $('statusTxt').textContent = cooling ? 'Cooling' : 'Open';
+    $('newAmt').disabled = cooling;
+    if (cooling) {
+      $('countdown').innerHTML = esc(fmtClock(c.until - now)) + '<small>to opening</small>';
+      $('coolAt').textContent = 'Opens ' + fmtTime(c.until) + ' ' + dayWord(c.until, now);
+      $('coolBar').style.width = (clamp((now - c.start) / (c.until - c.start), 0, 1) * 100).toFixed(1) + '%';
+      if (document.activeElement === $('newAmt')) $('newAmt').blur();
+    } else if (c.on && c.next) {
+      const left = c.next - now;
+      $('dockNote').textContent = 'Cooling ' + (left < DAY_MS ? 'in ' + fmtDur(left) : dayWord(c.next, now) + ' ' + fmtTime(c.next));
+    } else $('dockNote').textContent = '';
+    if (wasCooling !== null && wasCooling !== cooling) {
+      if (cooling) toast('Cooling hours started. Rest up.', true);
+      else { toast('Open again. Trade the plan.'); confetti(1); }
+    }
+    wasCooling = cooling;
+    return c;
+  }
+  const isCooling = () => coolInfo(Date.now()).active;
+  function blockedByCooling() {
+    if (!isCooling()) return false;
+    toast('Cooling hours. Updates open at ' + fmtTime(coolInfo(Date.now()).until), true);
+    return true;
   }
 
   function record(newAmt) {
+    if (blockedByCooling()) return;
     const t = targets(state);
     const before = levelOf(state.amount, t);
     const after = levelOf(newAmt, t);
+    const dayBefore = dayInfo(t, before, Date.now());
     state.history.push({ at: Date.now(), from: state.amount, to: newAmt });
     state.amount = newAmt;
     save();
@@ -781,8 +1158,10 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       const miles = milestoneAt(t, state.start);
       let crossed = null;
       for (let i = before + 1; i <= after; i++) if (miles[i]) crossed = miles[i];
+      const dayHit = !dayBefore.done && after >= dayBefore.goalStep;
       if (after >= state.steps) { toast('Summit reached! All ' + state.steps + ' targets hit'); confetti(3); }
       else if (crossed) { toast(fmtX(crossed) + ' milestone! Trade ' + after + ' reached'); confetti(2); }
+      else if (dayHit) { toast("Today's target hit! " + plural(dayBefore.goalTrades, 'trade') + ' done'); confetti(2); }
       else { toast(after - before > 1 ? 'Trades ' + (before + 1) + '–' + after + ' reached!' : 'Trade ' + after + ' reached!'); confetti(1); }
     } else if (after < before) {
       toast('Back to step ' + after + '. Next target: ' + fmt(t[after + 1]), true);
@@ -791,10 +1170,11 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 
   $('recForm').addEventListener('submit', (e) => {
     e.preventDefault();
+    if (blockedByCooling()) return;
     const v = parseNum($('newAmt').value);
     const err = $('recErr');
-    if (!(v > 0)) { err.textContent = 'Enter an amount above 0, for example 12.50.'; err.hidden = false; return; }
-    err.hidden = true;
+    if (!(v > 0)) { err.textContent = 'Enter an amount above 0, for example 12.50.'; err.hidden = false; $('dockNote').hidden = true; return; }
+    err.hidden = true; $('dockNote').hidden = false;
     $('newAmt').value = '';
     $('newAmt').blur();
     record(r2(v));
@@ -806,12 +1186,18 @@ body { padding-top: env(safe-area-inset-top, 0px); }
     record(t[lvl + 1]);
   });
   $('undoBtn').addEventListener('click', () => {
+    if (blockedByCooling()) return;
     const h = state.history.pop();
     if (!h) return;
     state.amount = h.from;
     save();
     render(true);
     toast('Last trade removed', true);
+  });
+  $('statusBtn').addEventListener('click', () => {
+    const now = Date.now(), c = coolInfo(now);
+    if (c.active) toast('Cooling until ' + fmtTime(c.until) + ' ' + dayWord(c.until, now), true);
+    else if (c.next) toast('Open. Cooling starts ' + dayWord(c.next, now) + ' at ' + fmtTime(c.next), true);
   });
 
   // ---------- CSV export ----------
@@ -847,30 +1233,62 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 
   // ---------- Setup ----------
   let confirmArmed = false;
+  let draftDays = [];
+  const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+  function renderDays() {
+    $('sDays').innerHTML = DAY_ORDER.map((d) => '<button type="button" class="day" data-d="' + d + '" aria-pressed="' + (draftDays.indexOf(d) >= 0) + '">' + DAY_NAMES[d].slice(0, 2) + '</button>').join('');
+  }
+  $('sDays').addEventListener('click', (e) => {
+    const b = e.target.closest('.day');
+    if (!b) return;
+    const d = +b.dataset.d, i = draftDays.indexOf(d);
+    if (i >= 0) draftDays.splice(i, 1); else draftDays.push(d);
+    renderDays();
+    onSetupInput();
+  });
+  function syncCoolFields() { $('coolFields').setAttribute('aria-disabled', String(!$('sCoolOn').checked)); }
   function openSetup() {
     $('sStart').value = state.start;
     $('sUnit').value = state.unit;
     $('sPct').value = state.pct;
     $('sSteps').value = state.steps;
+    $('sTpd').value = state.tpd;
+    $('sCoolOn').checked = !!state.cool.on;
+    $('sFrom').value = state.cool.from;
+    $('sTo').value = state.cool.to;
+    draftDays = state.cool.days.slice();
+    renderDays();
+    syncCoolFields();
     confirmArmed = false;
-    $('saveSetup').textContent = 'Start climb';
     $('sWarn').hidden = true;
     updatePreview();
     $('sheetBack').hidden = false;
-    setTimeout(() => $('sStart').focus(), 50);
+    setTimeout(() => $('sStart').focus({ preventScroll: true }), 50);
   }
   function closeSetup() { $('sheetBack').hidden = true; }
   function readSetup() {
     const start = parseNum($('sStart').value), pct = parseNum($('sPct').value), steps = Math.round(parseNum($('sSteps').value));
+    const tpd = Math.round(parseNum($('sTpd').value));
     const unit = $('sUnit').value.trim().slice(0, 8) || 'USDT';
+    const cool = { on: $('sCoolOn').checked, from: $('sFrom').value || '09:00', to: $('sTo').value || '17:00', days: draftDays.slice().sort() };
     if (!(start > 0)) return { error: 'Starting amount must be above 0.' };
     if (!(pct > 0 && pct <= 1000)) return { error: 'Gain per step must be between 0 and 1000%.' };
     if (!(steps >= 1 && steps <= 500)) return { error: 'Number of steps must be between 1 and 500.' };
-    return { start: r2(start), pct, steps, unit };
+    if (!(tpd >= 1 && tpd <= 500)) return { error: 'Target trades per day must be between 1 and 500.' };
+    if (cool.on && cool.from === cool.to) return { error: 'Cooling start and end times must differ.' };
+    if (cool.on && !cool.days.length) return { error: 'Pick at least one cooling day, or switch cooling hours off.' };
+    return { start: r2(start), pct, steps, unit, tpd, cool };
+  }
+  const isNewClimb = (s) => state.sample || s.start !== state.start || s.pct !== state.pct || s.steps !== state.steps;
+  function saveLabel(s) {
+    if (s.error) return state.sample ? 'Start climb' : 'Save';
+    if (state.sample) return 'Start climb';
+    return isNewClimb(s) ? 'Start new climb' : 'Save changes';
   }
   function updatePreview() {
     const s = readSetup();
-    if (s.error) { $('sPreview').innerHTML = esc(s.error); return; }
+    $('saveSetup').textContent = saveLabel(s);
+    if (s.error) { $('sPreview').innerHTML = esc(s.error); $('sPaceNote').textContent = ''; return; }
     const t = targets(s);
     const fin = t[t.length - 1];
     let x10k = '';
@@ -880,15 +1298,27 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       '<span>Trade 1 target: <b>' + fmt(t[1]) + ' ' + esc(s.unit) + '</b></span>' +
       '<span>Final target (trade ' + s.steps + '): <b>' + fmt(fin) + ' ' + esc(s.unit) + '</b></span>' +
       '<span>Total growth: <b>' + fmtX(fin / s.start) + '</b></span>' + x10k;
+    const startDay = midnight(isNewClimb(s) ? Date.now() : (state.planStart || Date.now()));
+    const days = Math.ceil(s.steps / s.tpd);
+    $('sPaceNote').innerHTML = plural(days, 'day') + ' in total. Last trade expected <b>' + esc(fmtDate(addDays(startDay, days - 1))) + '</b>.';
   }
-  ['sStart', 'sPct', 'sSteps', 'sUnit'].forEach((id) => $(id).addEventListener('input', () => {
+  function onSetupInput() {
+    syncCoolFields();
     updatePreview();
-    if (confirmArmed) { confirmArmed = false; $('saveSetup').textContent = 'Start climb'; $('sWarn').hidden = true; }
-  }));
+    if (confirmArmed) { confirmArmed = false; $('sWarn').hidden = true; }
+  }
+  ['sStart', 'sPct', 'sSteps', 'sUnit', 'sTpd', 'sFrom', 'sTo', 'sCoolOn'].forEach((id) => $(id).addEventListener('input', onSetupInput));
+  $('sCoolOn').addEventListener('change', onSetupInput);
   $('setupForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const s = readSetup();
     if (s.error) { $('sWarn').textContent = s.error; $('sWarn').hidden = false; return; }
+    if (!isNewClimb(s)) {
+      state.unit = s.unit; state.tpd = s.tpd; state.cool = s.cool;
+      save(); closeSetup(); render(false);
+      toast('Settings saved');
+      return;
+    }
     const hasReal = !state.sample && state.history.length > 0;
     if (hasReal && !confirmArmed) {
       confirmArmed = true;
@@ -897,7 +1327,8 @@ body { padding-top: env(safe-area-inset-top, 0px); }
       $('saveSetup').textContent = 'Yes, start new climb';
       return;
     }
-    state = { sample: false, startedAt: Date.now(), start: s.start, pct: s.pct, steps: s.steps, unit: s.unit, amount: s.start, history: [] };
+    const now = Date.now();
+    state = { sample: false, startedAt: now, planStart: now, start: s.start, pct: s.pct, steps: s.steps, unit: s.unit, tpd: s.tpd, cool: s.cool, amount: s.start, history: [] };
     save();
     closeSetup();
     render(true);
@@ -908,6 +1339,21 @@ body { padding-top: env(safe-area-inset-top, 0px); }
   $('cancelSetup').addEventListener('click', closeSetup);
   $('sheetBack').addEventListener('click', (e) => { if (e.target === $('sheetBack')) closeSetup(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheetBack').hidden) closeSetup(); });
+
+  // ---------- Slogan ticker ----------
+  (function ticker() {
+    const track = $('tickerTrack');
+    if (reduceMotion) {
+      $('ticker').classList.add('static');
+      let i = 0;
+      const show = () => { track.innerHTML = '<span>' + esc(SLOGANS[i % SLOGANS.length]) + '</span>'; i++; };
+      show(); setInterval(show, 7000);
+      return;
+    }
+    const one = SLOGANS.map((s) => '<span>' + esc(s) + '</span>').join('');
+    track.innerHTML = one + SLOGANS.map((s) => '<span aria-hidden="true">' + esc(s) + '</span>').join('');
+    track.style.setProperty('--dur', Math.round(SLOGANS.join(' ').length * 0.32) + 's');
+  })();
 
   // ---------- Hero tilt ----------
   const hero = $('hero');
@@ -978,6 +1424,14 @@ body { padding-top: env(safe-area-inset-top, 0px); }
   addEventListener('resize', () => { if (raf) sizeCanvas(); });
 
   render(true);
+
+  // Tick every second: countdown and cooling switch; full refresh when the day or the on-pace step changes.
+  setInterval(() => {
+    const now = Date.now();
+    const key = midnight(now) + ':' + planInfo(targets(state), now).paceStep;
+    if (key !== lastKey) render(false); else renderClock(now);
+  }, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(false); });
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
