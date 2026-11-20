@@ -506,6 +506,8 @@ body { padding-top: env(safe-area-inset-top, 0px); }
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
 .ticker-track { display: flex; width: max-content; }
 .ticker-track span { white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 14px; display: inline-flex; align-items: center; gap: 28px; }
+.ticker-track span.main { font-family: var(--font-display); font-weight: 600; font-size: 15px; background: linear-gradient(100deg, #FFFFFF 0%, var(--gold) 80%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ticker-track span.main::after { -webkit-text-fill-color: var(--gold); }
 .ticker-track span::after { content: "◆"; font-size: 8px; color: var(--gold); opacity: 0.6; }
 .ticker-track { animation: marquee var(--dur, 60s) linear infinite; }
 
@@ -519,7 +521,7 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 .dock-row .err { margin-right: auto; }
 .dock-note { font-size: 12px; color: var(--faint); text-align: right; }
 .cool-panel { display: none; }
-body.cooling .app > *:not(.top):not(.motto) { filter: grayscale(1) brightness(0.62); transition: filter 0.6s; }
+body.cooling .app > *:not(.top):not(.ticker) { filter: grayscale(1) brightness(0.62); transition: filter 0.6s; }
 body.cooling .hero::after, body.cooling .need, body.cooling .bar i::after { animation: none; }
 body.cooling .app button:not(#openSetup):not(#statusBtn) { pointer-events: none; }
 body.cooling .dock .dock-in > *:not(.cool-panel) { display: none; }
@@ -611,7 +613,7 @@ body.cooling .cool-panel {
     </div>
   </header>
 
-  <p class="motto"><span class="q" aria-hidden="true">“</span><span class="t" id="motto">A live dog is better than a dead lion.</span></p>
+  <div class="ticker" id="ticker" aria-label="Trading reminders"><div class="ticker-track" id="tickerTrack"></div></div>
 
   <div class="banner" id="sampleBanner" hidden>
     <span>You're looking at sample trades.</span>
@@ -687,7 +689,6 @@ body.cooling .cool-panel {
     </div>
   </section>
 
-  <div class="ticker" id="ticker" aria-label="Trading reminders"><div class="ticker-track" id="tickerTrack"></div></div>
 
   <section class="card" aria-labelledby="ladH">
     <div class="section-h"><h2 id="ladH">Target ladder</h2><span id="ladSub"></span></div>
@@ -776,6 +777,7 @@ body.cooling .cool-panel {
   const MILESTONES = [10, 100, 1000, 10000, 100000];
   const DEFAULT_COOL = { on: true, from: '09:00', to: '17:00', days: [1, 2, 3, 4, 5] };
   const DEFAULT_TPD = 5;
+  const MAIN_SLOGAN = 'A live dog is better than a dead lion.';
   const SLOGANS = [
     'Protect the capital and the profits will follow.',
     'Live to trade another day.',
@@ -1336,9 +1338,12 @@ body.cooling .cool-panel {
   // ---------- Slogan ticker ----------
   (function ticker() {
     const track = $('tickerTrack');
-    const one = SLOGANS.map((s) => '<span>' + esc(s) + '</span>').join('');
-    track.innerHTML = one + SLOGANS.map((s) => '<span aria-hidden="true">' + esc(s) + '</span>').join('');
-    track.style.setProperty('--dur', Math.round(SLOGANS.join(' ').length * 0.32) + 's');
+    // The main slogan leads and comes round again halfway through the loop.
+    const half = Math.ceil(SLOGANS.length / 2);
+    const list = [MAIN_SLOGAN].concat(SLOGANS.slice(0, half), [MAIN_SLOGAN], SLOGANS.slice(half));
+    const item = (s, hide) => '<span' + (s === MAIN_SLOGAN ? ' class="main"' : '') + (hide ? ' aria-hidden="true"' : '') + '>' + esc(s) + '</span>';
+    track.innerHTML = list.map((s) => item(s)).join('') + list.map((s) => item(s, true)).join('');
+    track.style.setProperty('--dur', Math.round(list.join(' ').length * 0.3) + 's');
   })();
 
   // ---------- Hero tilt ----------
